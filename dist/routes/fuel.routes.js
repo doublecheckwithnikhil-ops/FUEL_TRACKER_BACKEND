@@ -1,18 +1,17 @@
-import { RequestHandler, Router } from "express";
-import { authMiddleware } from "../middleware/auth";
-import { roleMiddleware } from "../middleware/role";
-import { upload } from "../middleware/upload";
-import { addFuelEntry, getAllFuelEntries, getFuelEntryById, getMyFuelEntries } from "../controllers/fuel.controller";
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const role_1 = require("../middleware/role");
+const upload_1 = require("../middleware/upload");
+const fuel_controller_1 = require("../controllers/fuel.controller");
+const router = (0, express_1.Router)();
 /**
  * @swagger
  * tags:
  *   name: Fuel
  *   description: Fuel management endpoints
  */
-
 /**
  * @swagger
  * /api/fuel-entry:
@@ -69,16 +68,10 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.post(
-  "/fuel-entry",
-  authMiddleware,
-  upload.fields([
+router.post("/fuel-entry", auth_1.authMiddleware, upload_1.upload.fields([
     { name: "billImg", maxCount: 1 },
     { name: "meterImg", maxCount: 1 },
-  ]),
-  addFuelEntry as RequestHandler
-);
-
+]), fuel_controller_1.addFuelEntry);
 /**
  * @swagger
  * /api/fuel-entry:
@@ -93,8 +86,7 @@ router.post(
  *       401:
  *         description: Unauthorized
  */
-router.get("/fuel-entry", authMiddleware, roleMiddleware(["admin"]), getAllFuelEntries as RequestHandler);
-
+router.get("/fuel-entry", auth_1.authMiddleware, (0, role_1.roleMiddleware)(["admin"]), fuel_controller_1.getAllFuelEntries);
 /**
  * @swagger
  * /api/fuel-entry/{id}:
@@ -118,8 +110,7 @@ router.get("/fuel-entry", authMiddleware, roleMiddleware(["admin"]), getAllFuelE
  *       404:
  *         description: Fuel entry not found
  */
-router.get("/fuel-entry/:id", authMiddleware, roleMiddleware(["admin", "driver"]), getFuelEntryById as RequestHandler);
-
+router.get("/fuel-entry/:id", auth_1.authMiddleware, (0, role_1.roleMiddleware)(["admin", "driver"]), fuel_controller_1.getFuelEntryById);
 /**
  * @swagger
  * /api/my-entries:
@@ -134,6 +125,6 @@ router.get("/fuel-entry/:id", authMiddleware, roleMiddleware(["admin", "driver"]
  *       401:
  *         description: Unauthorized
  */
-router.get("/my-entries", authMiddleware, roleMiddleware(["driver"]), getMyFuelEntries as RequestHandler);
-
-export default router;
+router.get("/my-entries", auth_1.authMiddleware, (0, role_1.roleMiddleware)(["driver"]), fuel_controller_1.getMyFuelEntries);
+exports.default = router;
+//# sourceMappingURL=fuel.routes.js.map

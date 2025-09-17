@@ -10,9 +10,7 @@ interface AuthRequest extends Request {
     id: number;
     role: string;
   };
-  files?: {
-    [fieldname: string]: Express.Multer.File[];
-  };
+  files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
 }
 
 // Add new fuel entry (Driver)
@@ -32,9 +30,10 @@ export const addFuelEntry = async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     const billFile =
-      req.files?.billImg?.[0]?.path.replace(/\\/g, "/") || null;
+      (req.files as { [fieldname: string]: Express.Multer.File[] })?.billImg?.[0]?.path.replace(/\\/g, "/") || null;
+
     const meterFile =
-      req.files?.meterImg?.[0]?.path.replace(/\\/g, "/") || null;
+      (req.files as { [fieldname: string]: Express.Multer.File[] })?.meterImg?.[0]?.path.replace(/\\/g, "/") || null;
 
     const fuelEntry = await prisma.fuelEntry.create({
       data: {
@@ -65,6 +64,7 @@ export const addFuelEntry = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
 
 // Get all fuel entries (Admin)
 export const getAllFuelEntries = async (_req: AuthRequest, res: Response) => {
