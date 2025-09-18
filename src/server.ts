@@ -9,6 +9,7 @@ import fuelRoutes from "./routes/fuel.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import OpenAI from "openai";
 import multer from "multer";
+import sharp from "sharp";
 
 dotenv.config();
 
@@ -23,13 +24,22 @@ const upload = multer({ dest: "uploads/" });
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
-app.use(cors({
-  origin: [
-    "http://localhost:5173",         // local dev
-    "http://192.168.151.42:8090"     // IIS frontend
-  ],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // local dev
+      "https://192.168.151.42:8090", // IIS frontend
+      "http://192.168.151.42:8092", // IIS frontend
+    ],
+    credentials: true,
+  })
+);
+// app.use(
+//   cors({
+//     origin: "*",
+//     credentials: true,
+//   })
+// );
 
 // routes
 app.use("/api/auth", authRoutes);
@@ -37,43 +47,80 @@ app.use("/api", fuelRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 // OCR endpoint
-app.post("/api/ocr-extract", upload.single("billPhoto"), async (req, res) => {
+app.post("/api/ocr-extract", upload.single("billImg"), async (req, res) => {
+  let tmpPath: string | undefined;
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-    const fs = await import("fs");
-    const fileData = fs.readFileSync(req.file.path, { encoding: "base64" });
+    tmpPath = req.file.path;
 
-    const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      input: `You are an OCR assistant. Extract bill details (billNumber, quantity, ratePerLitre, totalValue) from this fuel bill image. Respond ONLY in JSON.
+    const buf = await sharp(tmpPath)
+      .rotate()
+      .resize({ width: 1600, withoutEnlargement: true })
+      .jpeg({ quality: 80 })
+      .toBuffer();
 
-Here is the image as base64: data:image/jpeg;base64,${fileData}`
+    const base64 = buf.toString("base64");
+    const mime = req.file.mimetype || "image/jpeg";
+    const dataUrl = `data:${mime};base64,${base64}`;
+
+    // ✅ Use Chat Completions with vision-friendly content parts
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
+      max_completion_tokens: 200,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Extract billNumber (string), quantity (number), ratePerLitre (number), totalValue (number). " +
+                "Return STRICT JSON with exactly those keys. No explanations.",
+            },
+            // image input (typed as MessageContentImageUrlObject in SDK)
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
     });
 
-    // The model output text
-    const extractedText = response.output_text;
+    const msg = completion.choices[0]?.message;
+    const text = msg?.content ?? "{}";
 
-    // Try to parse JSON safely
-    let parsedData = {};
-    try {
-      parsedData = JSON.parse(extractedText || "{}");
-    } catch {
-      return res.status(500).json({ error: "Failed to parse OCR result" });
-    }
+    const raw = JSON.parse(text);
+    const toNum = (v: unknown) => {
+      const n = parseFloat(String(v ?? "").replace(/[^\d.-]/g, ""));
+      return Number.isFinite(n) ? n : undefined;
+    };
 
-    return res.json(parsedData);
+    const payload = {
+      billNumber: String(raw.billNumber ?? "").trim(),
+      quantity: toNum(raw.quantity),
+      ratePerLitre: toNum(raw.ratePerLitre),
+      totalValue: toNum(raw.totalValue ?? raw.totalAmount),
+    };
+
+    return res.json(payload);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "OCR processing failed" });
+  } finally {
+    try {
+      if (tmpPath) {
+        const fs = await import("fs/promises");
+        await fs.unlink(tmpPath);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 });
 
-
-
-require('./swagger')(app);
+require("./swagger")(app);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);

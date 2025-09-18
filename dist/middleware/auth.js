@@ -7,6 +7,7 @@ exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authMiddleware = (req, res, next) => {
     const token = req.cookies.token;
+    console.log("token -> ", token);
     if (!token)
         return res.sendStatus(401);
     try {
