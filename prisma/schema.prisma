@@ -9,58 +9,102 @@ datasource db {
 
 model Role {
   id    Int     @id @default(autoincrement())
-  name  String @unique
+  name  String  @unique
   users User[]
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  name     String
-  empCode  String? @unique
-  password String
-  roleId   Int
-  role     Role    @relation(fields: [roleId], references: [id])
-  vehicles Vehicle[]
-  petroCards PetroCard[] @relation("UserPetroCards")
-  fuelEntries FuelEntry[]
+  id              Int        @id @default(autoincrement())
+  name            String
+  empCode         String?    @unique
+  employeeId      Int?       @unique
+
+  departmentName  String?
+  designationName String?
+  locationName    String?
+  storeCode       String?
+
+  password        String
+
+  roleId          Int
+  role            Role       @relation(fields: [roleId], references: [id])
+
+  // relations
+  vehicles        Vehicle[]
+  petroCards      PetroCard[] @relation("UserPetroCards")
+  fuelEntries     FuelEntry[]
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([roleId])
+  @@index([designationName])
+  @@index([storeCode])
 }
 
 model Vehicle {
-  id              Int     @id @default(autoincrement())
-  vehicleNumber   String @unique
-  capacity        Int
+  id               Int       @id @default(autoincrement())
+  vehicleNumber    String    @unique
+
   assignedDriverId Int?
-  driver          User?   @relation(fields: [assignedDriverId], references: [id])
-  fuelEntries     FuelEntry[]
+  driver           User?     @relation(fields: [assignedDriverId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  fuelEntries      FuelEntry[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Excel fields
+  size             String?
+  tankSize         String? 
+  owner            String?
+  ownType          String?
+  modelNumber      String?
+  fuelType         String?
+
+  @@index([assignedDriverId])
 }
 
+
+
+model PetroCard {
+  id               Int       @id @default(autoincrement())
+  cardNumber       String    @unique
+  validTill        DateTime? 
+  wallet           String?       
+  issuedToDriverId Int?
+  issuedToDriver   User?     @relation("UserPetroCards", fields: [issuedToDriverId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  fuelEntries      FuelEntry[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([issuedToDriverId])
+}
+
+
 model FuelEntry {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   vehicleId       Int
   location        String
   latitude        Float
   longitude       Float
-  odometerReading Float
+  odometerReading Decimal   @db.Decimal(10, 2)
   billNumber      String
-  quantity        Float
-  ratePerLitre    Float
+  quantity        Decimal   @db.Decimal(10, 3)
+  ratePerLitre    Decimal   @db.Decimal(10, 3)
   driverId        Int
-  amount          Float
+  amount          Decimal   @db.Decimal(12, 2)
   meterImg        String
   cardId          Int?
   billImg         String
-  createdAt       DateTime? @default(now())
+  createdAt       DateTime  @default(now())
 
-  vehicle  Vehicle @relation(fields: [vehicleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  driver   User    @relation(fields: [driverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  petroCard PetroCard? @relation(fields: [cardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
+  vehicle   Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  driver    User       @relation(fields: [driverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  petroCard PetroCard? @relation(fields: [cardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-model PetroCard {
-  id               Int       @id @default(autoincrement())
-  cardNumber       String @unique
-  validTill        String
-  issuedToDriverId Int?
-  issuedToDriver   User?     @relation("UserPetroCards", fields: [issuedToDriverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  fuelEntries      FuelEntry[]
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([cardId])
+  @@index([createdAt])
 }

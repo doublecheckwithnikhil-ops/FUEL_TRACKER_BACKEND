@@ -10,7 +10,6 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma = new client_1.PrismaClient();
 const login = async (req, res) => {
     const { empCode, password } = req.body;
-    console.log(empCode);
     try {
         const user = await prisma.user.findUnique({
             where: { empCode },

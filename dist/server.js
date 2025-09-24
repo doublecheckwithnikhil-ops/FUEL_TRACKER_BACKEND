@@ -44,6 +44,8 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const fuel_routes_1 = __importDefault(require("./routes/fuel.routes"));
 const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
+const adminAssets_routes_1 = __importDefault(require("./routes/adminAssets.routes"));
+const superAdmin_routes_1 = __importDefault(require("./routes/superAdmin.routes"));
 const openai_1 = __importDefault(require("openai"));
 const multer_1 = __importDefault(require("multer"));
 const sharp_1 = __importDefault(require("sharp"));
@@ -72,8 +74,10 @@ app.use((0, cors_1.default)({
 // );
 // routes
 app.use("/api/auth", auth_routes_1.default);
-app.use("/api", fuel_routes_1.default);
+app.use("/api/admin", adminAssets_routes_1.default);
 app.use("/api/dashboard", dashboard_routes_1.default);
+app.use("/api/super-admin", superAdmin_routes_1.default);
+app.use("/api", fuel_routes_1.default);
 // OCR endpoint
 app.post("/api/ocr-extract", upload.single("billImg"), async (req, res) => {
     let tmpPath;

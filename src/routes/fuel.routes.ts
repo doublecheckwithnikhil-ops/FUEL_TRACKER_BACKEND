@@ -3,6 +3,7 @@ import { authMiddleware } from "../middleware/auth";
 import { roleMiddleware } from "../middleware/role";
 import { upload } from "../middleware/upload";
 import { addFuelEntry, getAllFuelEntries, getFuelEntryById, getMyFuelEntries } from "../controllers/fuel.controller";
+import { assignCard, assignVehicle, deassignCard, deassignVehicle, listDrivers, listPetroCards, listVehicles } from "../controllers/assignment.controller";
 
 const router = Router();
 
@@ -135,5 +136,179 @@ router.get("/fuel-entry/:id", authMiddleware, roleMiddleware(["admin", "driver"]
  *         description: Unauthorized
  */
 router.get("/my-entries", authMiddleware, roleMiddleware(["driver"]), getMyFuelEntries as RequestHandler);
+
+
+
+// --- Admin: Assignments ---
+
+/**
+ * @swagger
+ * /api/admin/drivers:
+ *   get:
+ *     summary: List drivers (searchable)
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: OK }
+ */
+router.get(
+  "/admin/drivers",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  listDrivers as RequestHandler
+);
+
+/**
+ * @swagger
+ * /api/admin/vehicles:
+ *   get:
+ *     summary: List vehicles (optionally only available)
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     parameters:
+ *       - in: query
+ *         name: available
+ *         schema: { type: boolean }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: OK }
+ */
+router.get(
+  "/admin/vehicles",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  listVehicles as RequestHandler
+);
+
+/**
+ * @swagger
+ * /api/admin/petrocards:
+ *   get:
+ *     summary: List petro cards (optionally only available)
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     parameters:
+ *       - in: query
+ *         name: available
+ *         schema: { type: boolean }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: OK }
+ */
+router.get(
+  "/admin/petrocards",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  listPetroCards as RequestHandler
+);
+
+/**
+ * @swagger
+ * /api/admin/assignments/vehicle:
+ *   post:
+ *     summary: Assign a vehicle to a driver
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [vehicleId, userId]
+ *             properties:
+ *               vehicleId: { type: integer }
+ *               userId: { type: integer }
+ *     responses:
+ *       200: { description: Assigned }
+ *       409: { description: Already assigned }
+ */
+router.post(
+  "/admin/assignments/vehicle",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  assignVehicle as RequestHandler
+);
+
+/**
+ * @swagger
+ * /api/admin/assignments/vehicle/{vehicleId}:
+ *   delete:
+ *     summary: De-assign a vehicle (make available)
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     parameters:
+ *       - in: path
+ *         name: vehicleId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: De-assigned }
+ */
+router.delete(
+  "/admin/assignments/vehicle/:vehicleId",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  deassignVehicle as RequestHandler
+);
+
+/**
+ * @swagger
+ * /api/admin/assignments/petrocard:
+ *   post:
+ *     summary: Assign a petro card to a driver
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [cardId, userId]
+ *             properties:
+ *               cardId: { type: integer }
+ *               userId: { type: integer }
+ *     responses:
+ *       200: { description: Assigned }
+ *       409: { description: Already assigned }
+ */
+router.post(
+  "/admin/assignments/petrocard",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  assignCard as RequestHandler
+);
+
+/**
+ * @swagger
+ * /api/admin/assignments/petrocard/{cardId}:
+ *   delete:
+ *     summary: De-assign a petro card (make available)
+ *     tags: [Fuel]
+ *     security: [ { cookieAuth: [] } ]
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: De-assigned }
+ */
+router.delete(
+  "/admin/assignments/petrocard/:cardId",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  deassignCard as RequestHandler
+);
+
 
 export default router;

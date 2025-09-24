@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes";
 import fuelRoutes from "./routes/fuel.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import adminAssetRoutes from "./routes/adminAssets.routes";
+import superadminRoutes from "./routes/superAdmin.routes";
 import OpenAI from "openai";
 import multer from "multer";
 import sharp from "sharp";
@@ -41,10 +43,14 @@ app.use(
 //   })
 // );
 
+
 // routes
 app.use("/api/auth", authRoutes);
-app.use("/api", fuelRoutes);
+app.use("/api/admin", adminAssetRoutes);     
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/super-admin", superadminRoutes);
+app.use("/api", fuelRoutes);              
+
 
 // OCR endpoint
 app.post("/api/ocr-extract", upload.single("billImg"), async (req, res) => {
